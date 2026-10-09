@@ -1,0 +1,61 @@
+// rich-replies — visual look of Claude's replies in the terminal.
+// Copy to ~/.claude/rich-replies.jsonc. Everything is off until you set it to true.
+// Edits apply at your next prompt (commands: at the next session).
+// A wrong key or value shows a toast and keeps its default.
+{
+  // true = on, false = off (the engine draws that part as usual).
+  // Buttons (▶, ⧉, folds) answer clicks only in the fullscreen terminal and on desktop.
+  "features": {
+    "tldr": false,             // ◆ TL;DR box at the top of long replies
+    "details": false,          // ▶ collapsible sections
+    "questions": false,        // ? badge on the closing question
+    "codeBlocks": false,       // framed code with its language badge (PHP, TS…)
+    "shellBlocks": false,      // framed SHELL block with ⧉ copy
+    "run": false,              // ▶ runs a command inline, under it (▶ all: the whole block in one shell); needs shellBlocks; no sudo here (the password prompt freezes the screen)
+    "links": false,            // bare URLs become short links (host/path), a PR's as ⎇ repo #367
+    "toolHeaders": false,      // badges on tool rows (SHELL, EDIT, NOTION…) with the call's duration
+    "colorSwatches": false,    // ██ swatch before each color a reply names (#38BDF8, rgb()), plus a row under it
+    "errorLens": false,        // red ▸ line under a failed tool row: the error that matters
+    "stackLinks": false,       // ↗ file:line chips under a failed tool row, click opens the editor
+    "problems": false,         // lint after Edit/Write: ✘ N on the row; runs the repo's own vendor/bin/phpcs and node_modules/.bin/eslint
+    "sqlConsole": false,       // ▶ on ```sql blocks starting with "-- db: <database>": read-only, 50 rows, local MariaDB; DELETE/UPDATE simulated (rows touched, nothing written); needs codeBlocks and a mariadb or mysql client in PATH
+    "restClient": false,       // ▶ on a curl line: status, time, size, headers, body; needs run
+    "jsonViewer": false,       // 🌳 foldable tree for ```json blocks (needs codeBlocks), REST bodies (needs restClient) and /exec output that is one JSON object or array
+    "imagePreview": false,     // thumbnails of image paths cited in a reply (terminal with image support)
+
+    // Slash commands, registered at session start.
+    "changesCommand": false,   // /changes: unstaged diff hunk by hunk, stage / unstage, revert / restore, → Claude
+    "prCommand": false,        // /pr: live card of the branch's PR, checks, failing log → Claude
+    "snapCommand": false,      // /snap <url>: page screenshot in the transcript (needs Chrome, Node 22+)
+    "execCommand": false       // /exec <command>: runs it in the transcript, the model sees its output only on → Claude
+  },
+
+  // Editor CLI that stack links open with "<editor> -g path:line" (cursor, code).
+  "editor": "cursor",
+
+  // 1. Define your colors once, as "#rrggbb" (Tailwind 400 shades: bright on a dark
+  //    background, black badge text stays readable on them). Add or rename freely.
+  "palette": {
+    "sky":     "#38BDF8",
+    "violet":  "#A78BFA",
+    "amber":   "#FBBF24",
+    "emerald": "#34D399",
+    "teal":    "#2DD4BF",
+    "orange":  "#FB923C",
+    "rose":    "#FB7185",
+    "fuchsia": "#E879F9",
+    "pink":    "#FF4785",
+    "slate":   "#94A3B8"
+  },
+
+  // 2. Use them by name. A raw "#rrggbb" or a terminal color name (red, cyan…) works too.
+  "colors": {
+    "tldr":     "sky",
+    "details":  "violet",     // collapsed title when clicks are off
+    "question": "amber",
+    "shell":    "emerald",
+    "progress": "teal",       // progress bars (/pr checks)
+    "pr":       "fuchsia",    // a merged PR on the /pr card
+    "path":     "teal"        // file paths: stack links, /changes, /snap
+  }
+}

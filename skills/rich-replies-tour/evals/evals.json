@@ -1,0 +1,30 @@
+{
+  "skill_name": "rich-replies-tour",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "how do I use rich replies?",
+      "expected_output": "Does not dump every feature. Runs step 0: tour.sh status / setup / enable all for the user to run (never edits ~/.claude/rich-replies.jsonc directly), then asks to restart Claude from /tmp/rr-tour (cd /tmp/rr-tour && claude -c) and waits for confirmation before step 1."
+    },
+    {
+      "id": 2,
+      "prompt": "I'm not sure what /changes does exactly",
+      "expected_output": "Jumps straight to step 6, without replaying the tour. Explains in one sentence that /changes shows the unstaged diff hunk by hunk (Stage, Revert with confirmation, → Claude) and that every action can be undone (Unstage, Restore). Asks to type /changes from /tmp/rr-tour, to Stage then Unstage the first hunk, Revert then Restore the second, and describes what should show."
+    },
+    {
+      "id": 3,
+      "prompt": "show me the rich replies SQL console",
+      "expected_output": "Plays step 9: first shows the CREATE DATABASE IF NOT EXISTS rr_tour / INSERT IGNORE statements of tour.sh db (scratch database only) and asks the user to run it; offers a SELECT then a DELETE FROM items WHERE qty = 0 in ```sql fences with '-- db: rr_tour', explains that the DELETE is simulated (rows it would touch, nothing written) and has the user check with SELECT COUNT(*) AS total FROM items that the table still holds 4 rows. Never runs a DROP."
+    },
+    {
+      "id": 4,
+      "prompt": "ok I ran /changes but nothing shows up",
+      "expected_output": "Troubleshoots without replaying the tour: checks that the session was started from /tmp/rr-tour (the command reads the current directory) and that changesCommand is true with a session restarted since (commands load at startup); points to cd /tmp/rr-tour && claude -c and tour.sh status. Asks what the user sees instead of assuming."
+    },
+    {
+      "id": 5,
+      "prompt": "done, put everything back the way it was",
+      "expected_output": "Offers without running them: tour.sh disable <features> or cp of the ~/.claude/rich-replies.jsonc.tour-backup backup, then tour.sh teardown. States that the rr_tour database is never dropped by the script and gives the drop query to the user, who decides whether to run it."
+    }
+  ]
+}

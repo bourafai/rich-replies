@@ -1,0 +1,12 @@
+{
+  "name": "rich-replies",
+  "displayName": "Rich replies",
+  "version": "0.1.0",
+  "description": "Claude Code terminal mod: TL;DR boxes, foldable sections, ▶ run for shell blocks, tool badges with error lines and stack links, a read-only SQL console, a REST client, a JSON tree, lint after edits, and /changes, /pr, /snap, /exec. Everything is off until you turn it on.",
+  "types": "./types/index.d.ts",
+  "author": { "name": "Aymene Bourafai" },
+  "homepage": "https://github.com/bourafai/rich-replies",
+  "repository": "https://github.com/bourafai/rich-replies",
+  "license": "MIT",
+  "keywords": ["claude-code", "mod", "terminal", "tui", "markdown", "developer-tools"]
+}

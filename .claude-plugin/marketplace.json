@@ -1,0 +1,14 @@
+{
+  "name": "rich-replies",
+  "owner": { "name": "Aymene Bourafai" },
+  "metadata": { "description": "Rich replies, a Claude Code terminal mod." },
+  "plugins": [
+    {
+      "name": "rich-replies",
+      "displayName": "Rich replies",
+      "source": "./",
+      "category": "productivity",
+      "description": "TL;DR boxes, ▶ run for shell blocks, tool badges, SQL console, REST client, JSON tree, /changes, /pr, /snap, /exec. Off until you turn features on."
+    }
+  ]
+}
