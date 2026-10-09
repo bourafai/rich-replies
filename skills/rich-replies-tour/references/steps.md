@@ -57,7 +57,7 @@ I: run the Bash tool `node app.js` (fails: `TypeError: Cannot read properties of
 
 You: click a `↗ app.js:3` chip.
 
-You should see: `$ SHELL` badge + duration in ms, red line `▸ TypeError…`, `↗ app.js:3` chips. A "Ran N shell commands" group that holds a failure unfolds on its own. The click opens `editor` (default `cursor`, changeable in step 11).
+You should see: `$ SHELL` badge + duration in ms, red line `▸ TypeError…`, `↗ app.js:3` chips. A "Ran N shell commands" group that holds a failure unfolds on its own. The click opens `editor` (default `cursor`, changeable in step 10).
 
 ## 5 · Lint after edit — problems
 

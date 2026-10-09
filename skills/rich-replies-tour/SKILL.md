@@ -13,7 +13,7 @@ Interactive onboarding for the `hooks/rich-replies` mod: one feature at a time, 
 
 ## Rules
 
-- **One step per turn.** Fixed format: `Step n/11 · <name>` → what it does (1 concrete sentence) → "Try" (commands in ```bash fences, one per line) → "You should see" → wait for `ok` / `next` / `skip`.
+- **One step per turn.** Fixed format: `Step n/10 · <name>` → what it does (1 concrete sentence) → "Try" (commands in ```bash fences, one per line) → "You should see" → wait for `ok` / `next` / `skip`.
 - **Targeted question** ("what does /changes do?"): jump to the matching step, never replay the whole tour. Steps 1 to 10 are independent once step 0 is done.
 - **Zen mode**: removed from the mod (leftover `zen` / `zenCommand` keys are ignored without error). If asked, say so in one sentence and offer step 4 (failing tool groups unfold on their own).
 - **Before / after** when the feature changes rendering (toolHeaders): first without, then with.

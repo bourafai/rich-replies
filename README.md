@@ -37,7 +37,8 @@ Buttons (⧉, ▶, → Claude) answer clicks on desktop, and in the terminal in 
 | --- | --- | --- |
 | `tldr`, `details`, `questions` | ◆ TL;DR box with ⧉ copy, ▶ foldable sections, a `?` badge on the closing question | |
 | `codeBlocks` | Framed code with a language badge and ⧉ copy (an `md` block copies the whole document) | |
-| `shellBlocks`, `run` | Framed shell blocks; ▶ runs a command under it, several runs side by side; risky commands (delete, push, upload, `\| sh`, non-GET requests) ask for a second click | |
+| `shellBlocks` | Framed shell blocks with ⧉ copy | |
+| `run` | ▶ runs a command under its block, several runs side by side; risky commands (delete, push, upload, `\| sh`, non-GET requests) ask for a second click | `shellBlocks` |
 | `links` | Bare URLs become short links; a PR reads `⎇ repo #367` | |
 | `colorSwatches` | A ██ swatch before each color a reply names | |
 | `imagePreview` | Thumbnails of image paths a reply cites | Image-capable terminal (iTerm2, Kitty, Orca), macOS |
@@ -45,7 +46,7 @@ Buttons (⧉, ▶, → Claude) answer clicks on desktop, and in the terminal in 
 | `errorLens`, `stackLinks` | The error line that matters under a failed call, `↗ file:line` links that open your editor | |
 | `problems` | Lint results on the row right after an Edit or Write | The repository's `phpcs` / `eslint`, or `php -l`, `node --check`… |
 | `sqlConsole` | ▶ on ```` ```sql ```` blocks: read-only, 50 rows; a `DELETE` / `UPDATE` is simulated (the rows it would touch, nothing written) | `codeBlocks`; MariaDB on `127.0.0.1:3306`, a `mariadb` or `mysql` client |
-| `restClient` | ▶ on a `curl` line: status, time, size, headers, body | `run` |
+| `restClient` | ▶ on a `curl` line: status, time, size, headers, body | `shellBlocks`, `run` |
 | `jsonViewer` | A foldable 🌳 tree for JSON blocks, REST bodies and `/exec` output | `codeBlocks` (blocks), `restClient` (bodies) |
 | `changesCommand` | `/changes`: the unstaged diff hunk by hunk: stage, unstage, revert, restore, → Claude | `git` |
 | `prCommand` | `/pr`: a live card for the branch's PR, CI checks, a failing log → Claude | `gh` |
@@ -67,7 +68,7 @@ cp ~/.claude/plugins/marketplaces/rich-replies/hooks/rich-replies/rich-replies.e
 - `palette` and `colors`: name your colors once (`#rrggbb`), then use them by name.
 - `editor`: the CLI that stack links open with (`cursor`, `code`).
 
-A wrong key or value shows a toast and keeps its default. `NO_COLOR` turns the mod off.
+A wrong key or value shows a toast and keeps its default. With `NO_COLOR` set, the mod draws nothing of its own and adds no formatting guide; enabled commands and the `problems` linter still run.
 
 ## Security
 
