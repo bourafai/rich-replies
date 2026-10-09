@@ -57,7 +57,7 @@ I: run the Bash tool `node app.js` (fails: `TypeError: Cannot read properties of
 
 You: click a `↗ app.js:3` chip.
 
-You should see: `$ SHELL` badge + duration in ms, red line `▸ TypeError…`, `↗ app.js:3` chips. A "Ran N shell commands" group that holds a failure unfolds on its own. The click opens `editor` (default `cursor`, changeable in step 11).
+You should see: `$ SHELL` badge + duration in ms, red line `▸ TypeError…`, `↗ app.js:3` chips. A "Ran N shell commands" group that holds a failure unfolds on its own. The click opens `editor` (default `cursor`, changeable in step 10).
 
 ## 5 · Lint after edit — problems
 
@@ -89,17 +89,7 @@ I: say nothing about the output before the → Claude click; if asked "what is t
 
 You should see: output in a frame with ⧉ copy and → Claude. The output of `cat data.json` is a JSON object: it shows as a foldable tree, with `{ } text` to go back to raw (and `🌳 tree` to return). The point of the feature: show data without sending it to the model.
 
-## 8 · See a web page — snapCommand
-
-What it does: `/snap <url>` captures the loaded page and shows it in the transcript. Useful options: `--el <css>` one block, `--full` the whole page, `--dark`, `--devices`, `--perf`, `--a11y`.
-
-Requirements: Chrome in `/Applications`, Node 22+, terminal with images.
-
-You: type `/snap https://example.com`, then `/snap https://example.com --el h1 --css`.
-
-You should see: the page image, then the h1 alone with its applied CSS (→ Claude to send it to me). No image = terminal without image support: "Open" link.
-
-## 9 · Local database — sqlConsole
+## 8 · Local database — sqlConsole
 
 What it does: ▶ on a ```sql block whose first line is `-- db: <database>`. Read-only, 1 query, 50 rows, local MariaDB. A `DELETE` / `UPDATE` never runs: the mod rewrites it as a `SELECT` and shows the rows it would touch (▶ simulate).
 
@@ -124,7 +114,7 @@ SELECT COUNT(*) AS total FROM items
 
 You should see: a 2-row table (`alpha`, `gamma`); for the `DELETE`, a simulation notice saying 2 rows would be deleted if run, and the rows `beta`, `delta`; the `COUNT(*)` still returns `4`: nothing was deleted. "SQL client not found" = install `mariadb` (`brew install mariadb`) and put it in PATH.
 
-## 10 · Endpoint and JSON — restClient, jsonViewer
+## 9 · Endpoint and JSON — restClient, jsonViewer
 
 What it does: ▶ on a simple `curl` shows status, duration, size, headers (folded) and body. A JSON body becomes a foldable tree; ```json blocks also get 🌳.
 
@@ -140,7 +130,7 @@ You: click ▶ on the curl, then fold / unfold the `flags` and `posts` nodes; cl
 
 You should see: `GET … 200`, duration, folded headers, colored tree. A `curl -X POST` asks for a second click (`▶⚠`).
 
-## 11 · Settings — colors, palette, editor
+## 10 · Settings — colors, palette, editor
 
 What it does: `colors` maps an element (tldr, details, question, shell, progress, pr, path) to a color; `palette` defines named colors as `#rrggbb`; `editor` picks the CLI used by `stackLinks`.
 

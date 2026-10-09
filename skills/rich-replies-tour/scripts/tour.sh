@@ -50,7 +50,7 @@ setup)
   # restClient + jsonViewer (also /exec): JSON to read
   printf '{"site":"example","flags":{"tldr":true,"links":false},"posts":[{"id":1,"title":"One"},{"id":2,"title":"Two"}]}\n' > data.json
   # imagePreview: a real image to cite by path
-  cp "$ROOT/docs/rich-replies/img/el.png" demo.png 2>/dev/null || true
+  cp "$ROOT/docs/rich-replies/img/dark.png" demo.png
   # /changes: two separate unstaged hunks
   git init -q && git config user.email tour@local && git config user.name tour
   seq 1 40 | sed 's/^/line /' > notes.txt

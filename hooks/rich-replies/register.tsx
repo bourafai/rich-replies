@@ -2,8 +2,8 @@ import { atom, memberOf, read, update } from 'claude-code'
 import type { EngineInterface, HookStream, Timer, ProcessSpawnChunk, ProcessSpawnResult, Register, RenderNode, UiPressArgument } from 'claude-code'
 
 import type { Check, CheckState, PrCard, Problems, Run } from '../../types'
-import type { Block, Config, SnapArgs } from './parse'
-import { DEFAULT_CONFIG, applyFeatures, engineLink, isSameTree, readConfig, describeTool, langStyle, cleanOutput, errorLine, findColors, findFrames, findRefs, inlineLinks, hasMarkdownStructure, splitSwatches, isRisky, parseApiCall, parseDiff, parseSnapArgs, imageCells, lintLines, sqlTarget, parseTsv, markdownTable, withResponseInfo, parseHttpResponse, jsonLines, jsonFoldPaths, isOpenByDefault, parseJson, isImagePath, snapArgv, snapReport, snapTitle, SNAP_USAGE, prChecks, parseBlocks, progressBar, shortLabel } from './parse'
+import type { Block, Config } from './parse'
+import { DEFAULT_CONFIG, applyFeatures, engineLink, isSameTree, readConfig, describeTool, langStyle, cleanOutput, errorLine, findColors, findFrames, findRefs, inlineLinks, hasMarkdownStructure, splitSwatches, isRisky, parseApiCall, parseDiff, imageCells, lintLines, sqlTarget, parseTsv, markdownTable, withResponseInfo, parseHttpResponse, jsonLines, jsonFoldPaths, isOpenByDefault, parseJson, isImagePath, prChecks, parseBlocks, progressBar, shortLabel } from './parse'
 
 // The atoms below spell the plugin id as a literal: the engine's state scan reads only string literals there.
 const PLUGIN = 'rich-replies'
@@ -19,9 +19,6 @@ const durationFamily = atom({ plugin: 'rich-replies', key: 'duration' } as const
 const failureFamily = atom({ plugin: 'rich-replies', key: 'failure' } as const, null)
 const hunkFamily = atom({ plugin: 'rich-replies', key: 'hunk' } as const, null)
 const prAtom = atom({ plugin: 'rich-replies', key: 'pr' } as const, null)
-const snapGenerationFamily = atom({ plugin: 'rich-replies', key: 'snapGeneration' } as const, null)
-const snapWatchedAtom = atom({ plugin: 'rich-replies', key: 'snapWatched' } as const, null)
-const WATCH_MS = 2000
 const problemsFamily = atom({ plugin: 'rich-replies', key: 'problems' } as const, null)
 const sqlAtom = atom({ plugin: 'rich-replies', key: 'sql' } as const, null)
 const foldFamily = atom({ plugin: 'rich-replies', key: 'fold' } as const, null)
@@ -32,7 +29,6 @@ const HUNK_LINES = 30
 const COMMANDS = [
   { feature: 'changesCommand', name: 'changes', description: 'Unstaged diff, hunk by hunk: stage / unstage, revert / restore, → Claude' },
   { feature: 'prCommand', name: 'pr', description: "Live card of the branch's PR: checks, reviews, failing log → Claude" },
-  { feature: 'snapCommand', name: 'snap', description: 'Screenshot of a page once loaded, drawn in the transcript', argumentHint: '<url> [--full|--el <css>|--vs <url>|--devices|--perf|--a11y…] · stop' },
   { feature: 'execCommand', name: 'exec', description: 'Run a shell command in the transcript; its output reaches Claude only on → Claude', argumentHint: '<command>' },
 ] as const
 
@@ -260,26 +256,6 @@ async function sendCheckLog($: EngineInterface, cwd: string, check: Check) {
   await $.prompt.fill({ text: `CI check \`${check.name}\` fails:\n${fenced('', cleanOutput(log))}\n`, mode: 'append' })
 }
 
-// snap.mjs drives Chrome over its DevTools protocol: loads the page, runs the checks, writes the picture.
-async function snap($: EngineInterface, args: SnapArgs, path: string) {
-  const script = `${$.plugin.root}/hooks/rich-replies/snap.mjs`
-  const res = await $.process
-    .run(['node', script, args.url, path, ...snapArgv(args)], { timeoutMs: 150000 })
-    .catch((error: unknown) => ({ exitCode: 1, stdout: '', stderr: String(error) }))
-  if (res.exitCode !== 0) return { error: res.stderr.trim().split('\n')[0] || 'failed' }
-  const [size = '', ...lines] = res.stdout.trim().split('\n')
-  const reports = lines.map(line => {
-    const at = line.indexOf(' ')
-    try {
-      return snapReport(line.slice(0, at), JSON.parse(line.slice(at + 1)), args.values.el)
-    } catch {
-      return ''
-    }
-  })
-
-  return { size, reports: reports.filter(Boolean) }
-}
-
 // After Edit or Write: the project's own linter when it has one (phpcs, eslint), else a syntax check.
 async function lintFile($: EngineInterface, id: string, file: string) {
   const dir = file.slice(0, file.lastIndexOf('/')) || '/'
@@ -362,46 +338,6 @@ async function thumbnail($: EngineInterface, path: string) {
   return thumb
 }
 
-// --watch: one picture redrawn when the watched tree changes (git status + mtimes, every 2 s, 30 minutes at most).
-// Module-level since a timer is not state data.
-let watching: { path: string; args: SnapArgs; dir: string; last: string; isBusy: boolean; ticks: number; timer: Timer } | null = null
-
-async function treeSignature($: EngineInterface, dir: string) {
-  // -z: paths come unquoted (a name with spaces would otherwise reach stat in quotes).
-  const script = 'git status --porcelain -z -uall | tr "\\0" "\\n" | cut -c4- | while IFS= read -r f; do stat -f "%N %m" "$f" 2>/dev/null || echo "$f gone"; done'
-  const res = await $.process.run(['sh', '-c', script], { cwd: dir || undefined, timeoutMs: 10000 }).catch(() => null)
-
-  return res?.stdout ?? ''
-}
-
-async function watchSnap($: EngineInterface, args: SnapArgs, path: string, dir: string) {
-  await stopWatch($)
-  const last = await treeSignature($, dir)
-  const timer = $.clock.every(WATCH_MS, () => void tickWatch($))
-  watching = { path, args, dir, last, isBusy: false, ticks: 0, timer }
-  await update($, snapWatchedAtom, () => path)
-}
-
-async function tickWatch($: EngineInterface) {
-  const current = watching
-  if (!current || current.isBusy) return
-  if (++current.ticks > 900) return stopWatch($)
-  const now = await treeSignature($, current.dir)
-  if (now === current.last) return
-  current.last = now
-  current.isBusy = true
-  const shot = await snap($, current.args, current.path)
-  current.isBusy = false
-  if ('error' in shot) return $.ui.toast(`watch: ${shot.error}`)
-  await update($, memberOf(snapGenerationFamily, { requestId: current.path }), n => (n ?? 0) + 1)
-}
-
-async function stopWatch($: EngineInterface) {
-  watching?.timer.cancel()
-  watching = null
-  await update($, snapWatchedAtom, () => null)
-}
-
 export const register: Register = on => {
   let isOff = false
   let cwd = ''
@@ -446,28 +382,7 @@ export const register: Register = on => {
     return { text: origin }
   })
 
-  on('command.run', { command: 'snap' }, async ($, e) => {
-    if (e.args.trim() === 'stop') {
-      await stopWatch($)
-      return { text: 'Watch stopped.' }
-    }
-    const args = parseSnapArgs(e.args)
-    if (typeof args === 'string') return { text: args }
-    const path = `/tmp/rich-replies-snap-${await $.clock.now()}.png`
-    const shot = await snap($, args, path)
-    const what = snapTitle(args)
-    if ('error' in shot) return { text: `Screenshot failed (${what}): ${shot.error}` }
-    const { figma, watch } = args.values
-    if (watch !== undefined) await watchSnap($, args, path, watch || cwd)
-    const notes = [
-      ...(figma ? [`**Figma**: ${figma} — → Claude compares the shot with the mockup.`] : []),
-      ...(watch !== undefined ? [`**Watch**: shot retaken on every change in \`${watch || cwd}\` (/snap stop to stop).`] : []),
-    ]
-
-    return { text: [`Screenshot of ${args.url} (${what})\n${path} ${shot.size}`, ...shot.reports, ...notes].join('\n\n') }
-  })
-
-  // The three commands answer text (what any surface shows); the terminal and desktop draw it live.
+  // The commands answer text (what any surface shows); the terminal and desktop draw it live.
   on('ui.render', { component: 'CommandOutput' }, async ($, e, next) => {
     const isDrawable = e.surface === 'terminal' || e.surface === 'desktop'
     if (isOff || !isDrawable || e.props.isErrored) return next(e)
@@ -614,44 +529,6 @@ export const register: Register = on => {
           {isTree && json && (await drawJsonTree($, { Box, Text, Button }, canClick, json.value, `${origin}:json`))}
           {!isTree && lines.length > rows && <Text dimColor>{`… ${lines.length - rows} lines above`}</Text>}
           {!isTree && run.output !== '' && lines.slice(-rows).map(line => <Text>{line || ' '}</Text>)}
-        </Box>
-      )
-    }
-
-    if (e.props.command === 'snap' && e.surface === 'terminal') {
-      const [, path, width, height] = e.props.text.match(/^(\/tmp\/rich-replies-snap-\d+\.png) (\d+)x(\d+)$/m) ?? []
-      const title = e.props.text.match(/^Screenshot of (.+)$/m)?.[1] ?? ''
-      if (!path) return next(e)
-      const { Image, Markdown } = $.ui.resolve(e)
-      const body = e.props.text.split('\n\n').slice(1).join('\n\n')
-      const figma = body.match(/^\*\*Figma\*\* ?: (\S+)/m)?.[1]
-      const generation = (await read($, memberOf(snapGenerationFamily, { requestId: path }))) ?? 0
-      const isWatched = (await read($, snapWatchedAtom)) === path
-      const toClaude = [
-        `Screenshot of ${title}: ${path}`,
-        body,
-        figma ? `Compare this screenshot (read ${path}) with the Figma mockup ${figma} (get_screenshot) and list the differences.` : '',
-      ].filter(Boolean).join('\n\n')
-      const cells = imageCells(Number(width), Number(height), Math.min(100, (e.viewport?.columns ?? 80) - 6))
-
-      return (
-        <Box flexDirection="column">
-          <Box gap={1}>
-            <Text bold color={config.colors.path}>{`◉ ${title}`}</Text>
-            {canClick && <Button plain key={`snap-open-${e.requestId}`} label="Open" onPress={() => void $.process.run(['open', path])} />}
-            {canClick && body && (
-              <Button plain key={`snap-copy-${e.requestId}`} label="⧉" onPress={async press => $.ui.toast((await $.ui.copy({ text: body, surface: press.surface })).isCopied ? 'Report copied' : 'Cannot copy here')} />
-            )}
-            {canClick && <Button plain key={`snap-claude-${e.requestId}`} label={figma ? '→ Claude (Figma)' : '→ Claude'} onPress={() => $.prompt.fill({ text: `${toClaude}\n`, mode: 'append' })} />}
-            {isWatched && <Text bold color="yellow">{`◉ watch${generation > 0 ? ` · ${generation}` : ''}`}</Text>}
-            {canClick && isWatched && <Button plain key={`snap-stop-${e.requestId}`} label="Stop" onPress={() => stopWatch($)} />}
-          </Box>
-          <Image source={{ file: path, format: 'png', generation }} columns={cells.columns} rows={cells.rows} alt={`screenshot of ${title}: ${path}`} />
-          {body && (
-            <Box flexDirection="column" borderStyle="round" borderColor={config.colors.path} paddingX={1}>
-              <Markdown text={body} />
-            </Box>
-          )}
         </Box>
       )
     }

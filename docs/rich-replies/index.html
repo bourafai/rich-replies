@@ -54,12 +54,11 @@
 <header>
   <h1>rich-replies <small>· quick tour · what to do, when</small></h1>
   <div class="bar">
-    <input type="search" id="q" placeholder="I want to… (e.g. compare prod, run a query, check the PR)" autofocus>
+    <input type="search" id="q" placeholder="I want to… (e.g. run a query, check the PR, copy a block)" autofocus>
     <span class="chip on" data-cat="all">All</span>
     <span class="chip" data-cat="reply">Replies</span>
     <span class="chip" data-cat="tools">Tools</span>
     <span class="chip" data-cat="git">Git</span>
-    <span class="chip" data-cat="web">Web · /snap</span>
     <span class="chip" data-cat="data">Data · API</span>
     <span class="chip" data-cat="config">Settings</span>
   </div>
@@ -175,84 +174,6 @@
   </div>
 </section>
 
-<!-- ===== Web /snap ===== -->
-<section class="card" data-cat="web" data-k="capture screenshot page site snap see view">
-  <div>
-    <h2>See a page without opening the browser</h2>
-    <p class="when">Captured once loaded (cookie wall accepted). <code>--el</code> for one block, <code>--full</code> for everything.</p>
-    <div class="use"><span>/snap https://example.com/ --el header</span><button class="copy">⧉</button></div>
-    <div class="use"><span>/snap https://example.com/ --full</span><button class="copy">⧉</button></div>
-  </div>
-  <div><img class="shot" src="img/el.png" alt="header capture"><div class="cap">--el header</div></div>
-</section>
-
-<section class="card" data-cat="web" data-k="compare local prod regression visual diff before pr vs">
-  <div>
-    <h2>Check that my local = prod</h2>
-    <p class="when">2 columns −/+, numbered zones, text diff. <code>--noads</code>, otherwise ads dominate. Add <code>--perf</code> / <code>--console</code> to compare those too.</p>
-    <div class="use"><span>/snap &lt;local url&gt; --vs &lt;prod url&gt; --noads</span><button class="copy">⧉</button></div>
-  </div>
-  <div><img class="shot" src="img/vs.png" alt="diff local vs prod"><div class="cap">2 zones: the subtitle and a missing chip</div></div>
-</section>
-
-<section class="card" data-cat="web" data-k="responsive mobile tablet iphone ipad dark mode hover click menu state">
-  <div>
-    <h2>Test responsive, dark mode, states</h2>
-    <p class="when"><code>--devices</code> : iPhone · iPad · desktop. <code>--dark</code>, <code>--hover &lt;css&gt;</code>, <code>--click &lt;css&gt;</code> (open menu…).</p>
-    <div class="use"><span>/snap &lt;url&gt; --devices</span><button class="copy">⧉</button></div>
-    <div class="use"><span>/snap &lt;url&gt; --click .menu-button</span><button class="copy">⧉</button></div>
-  </div>
-  <div class="shots">
-    <div><img class="shot" src="img/devices.png" alt="devices"><div class="cap">--devices</div></div>
-    <div><img class="shot" src="img/dark.png" alt="dark"><div class="cap">--dark</div></div>
-  </div>
-</section>
-
-<section class="card" data-cat="web" data-k="performance slow lcp cls ads layout shift loading filmstrip weight third party">
-  <div>
-    <h2>Why the page is slow / jumps around</h2>
-    <p class="when"><code>--perf</code>: TTFB, LCP (green frame), weight, third parties. <code>--cls</code>: zones that shift. <code>--filmstrip</code>: loading frame by frame.</p>
-    <div class="use"><span>/snap &lt;url&gt; --perf --cls</span><button class="copy">⧉</button></div>
-    <div class="use"><span>/snap &lt;url&gt; --filmstrip</span><button class="copy">⧉</button></div>
-  </div>
-  <div class="shots">
-    <div><img class="shot" src="img/perf.png" alt="perf"><div class="cap">--perf · LCP framed</div></div>
-    <div><img class="shot" src="img/filmstrip.png" alt="filmstrip"><div class="cap">--filmstrip</div></div>
-  </div>
-</section>
-
-<section class="card" data-cat="web" data-k="accessibility a11y contrast alt console error js 404 quality">
-  <div>
-    <h2>Quick audit: a11y and JS errors</h2>
-    <p class="when"><code>--a11y</code>: contrast, alt, unnamed links (numbered). <code>--console</code>: JS errors + 4xx/5xx requests.</p>
-    <div class="use"><span>/snap &lt;url&gt; --a11y --console</span><button class="copy">⧉</button></div>
-  </div>
-  <div><img class="shot" src="img/a11y.png" alt="a11y"><div class="cap">--a11y</div></div>
-</section>
-
-<section class="card" data-cat="web" data-k="share og facebook x slack seo meta card social">
-  <div>
-    <h2>See an article's share card</h2>
-    <p class="when">Real rendering from og:/twitter: tags + missing tags.</p>
-    <div class="use"><span>/snap &lt;article url&gt; --og</span><button class="copy">⧉</button></div>
-  </div>
-  <div><img class="shot" src="img/og.png" alt="og card" style="max-width:420px"></div>
-</section>
-
-<section class="card" data-cat="web" data-k="css computed style tokens design system figma mockup watch live">
-  <div>
-    <h2>Design: CSS, tokens, mockup, live</h2>
-    <p class="when"><code>--el x --css</code>: applied CSS. <code>--tokens</code>: values outside the design system. <code>--figma &lt;url&gt;</code>: I compare against the mockup. <code>--watch</code>: recaptures on every save (<code>/snap stop</code>).</p>
-    <div class="use"><span>/snap &lt;url&gt; --el h1 --css</span><button class="copy">⧉</button></div>
-    <div class="use"><span>/snap &lt;url&gt; --el .card --tokens</span><button class="copy">⧉</button></div>
-    <div class="use"><span>/snap &lt;url&gt; --watch ~/Projects/shop</span><button class="copy">⧉</button></div>
-  </div>
-  <div class="term">
-    <span class="teal b">◉ example.com (h1 element · CSS)</span><span class="btn">⧉</span><span class="btn">→ Claude</span>
-    <div class="box" style="border-color:#38BDF8"><span class="cyan">h1</span> {<br><span class="ind">display: <span class="yellow">flex</span>;</span><br><span class="ind">font-family: <span class="yellow">"Nunito Variable", sans-serif</span>;</span><br><span class="ind">font-size: <span class="yellow">16px</span>;</span><br>}</div>
-  </div>
-</section>
-
 <!-- ===== Data / API ===== -->
 <section class="card" data-cat="data" data-k="sql query database mariadb select read delete update simulate">
   <div>
@@ -287,17 +208,17 @@
 <section class="card" data-cat="config" data-k="settings config color enable disable feature customize jsonc command">
   <div>
     <h2>Enable a feature, change a color</h2>
-    <p class="when">Everything is <b>off</b> by default. One commented file (template: <code>hooks/rich-replies/rich-replies.example.jsonc</code>). <code>features</code>: true/false, applied on the next prompt; commands (<code>changesCommand</code>, <code>snapCommand</code>…) on the next session. <code>palette</code>: your hex values. <code>colors</code>: by name.</p>
+    <p class="when">Everything is <b>off</b> by default. One commented file (template: <code>hooks/rich-replies/rich-replies.example.jsonc</code>). <code>features</code>: true/false, applied on the next prompt; commands (<code>changesCommand</code>, <code>prCommand</code>…) once the plugin reloads (<code>/reload-plugins</code>). <code>palette</code>: your hex values. <code>colors</code>: by name.</p>
     <div class="use"><span>~/.claude/rich-replies.jsonc</span><button class="copy">⧉</button></div>
     <p class="when">Buttons (⧉, ▶, → Claude…) only show in fullscreen mode: without it the terminal does not pass clicks on. The mode takes the terminal pane, not the screen. Back: <code>/tui default</code>.</p>
     <div class="use"><span>/tui fullscreen</span><button class="copy">⧉</button></div>
   </div>
-  <div class="term"><span class="dim">// rich-replies.jsonc</span><br>{ <span class="cyan">"features"</span>: { <span class="cyan">"tldr"</span>: <span class="mag">true</span>, <span class="cyan">"snapCommand"</span>: <span class="mag">true</span> },<br>&nbsp; <span class="cyan">"palette"</span>: { <span class="cyan">"mint"</span>: <span class="green">"#6EE7B7"</span> },<br>&nbsp; <span class="cyan">"colors"</span>: { <span class="cyan">"shell"</span>: <span class="green">"mint"</span> } }</div>
+  <div class="term"><span class="dim">// rich-replies.jsonc</span><br>{ <span class="cyan">"features"</span>: { <span class="cyan">"tldr"</span>: <span class="mag">true</span>, <span class="cyan">"prCommand"</span>: <span class="mag">true</span> },<br>&nbsp; <span class="cyan">"palette"</span>: { <span class="cyan">"mint"</span>: <span class="green">"#6EE7B7"</span> },<br>&nbsp; <span class="cyan">"colors"</span>: { <span class="cyan">"shell"</span>: <span class="green">"mint"</span> } }</div>
 </section>
 
 <p class="empty hide" id="none">Nothing for that. Try: compare, sql, pr, mobile, slow…</p>
 </main>
-<footer>rich-replies · <a href="https://github.com/bourafai/rich-replies" style="color:inherit">github.com/bourafai/rich-replies</a> · screenshots taken by /snap on this page</footer>
+<footer>rich-replies · <a href="https://github.com/bourafai/rich-replies" style="color:inherit">github.com/bourafai/rich-replies</a></footer>
 <div id="zoom"><img alt=""></div>
 
 <script>

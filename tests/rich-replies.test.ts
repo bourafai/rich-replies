@@ -2,9 +2,8 @@ import type { On, RenderElement } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import type { SnapArgs } from '../hooks/rich-replies/parse'
 
-import { FEATURES, applyFeatures, engineLink, isSameTree, cleanOutput, errorLine, parseDiff, parseSnapArgs, imageCells, prChecks, snapArgv, snapReport, snapTitle, lineDiff, lintLines, sqlTarget, parseTsv, markdownTable, withResponseInfo, parseHttpResponse, jsonLines, isOpenByDefault, isImagePath, findColors, splitSwatches, hasMarkdownStructure, findFrames, readConfig, describeTool, findRefs, inlineLinks, isRisky, parseApiCall, parseBlocks, progressBar } from '../hooks/rich-replies/parse'
+import { FEATURES, applyFeatures, engineLink, isSameTree, cleanOutput, errorLine, parseDiff, imageCells, prChecks, lintLines, sqlTarget, parseTsv, markdownTable, withResponseInfo, parseHttpResponse, jsonLines, isOpenByDefault, isImagePath, findColors, splitSwatches, hasMarkdownStructure, findFrames, readConfig, describeTool, findRefs, inlineLinks, isRisky, parseApiCall, parseBlocks, progressBar } from '../hooks/rich-replies/parse'
 
 // Features ship off; these tests draw them on, as a user's ~/.claude/rich-replies.jsonc does.
 const ALL_ON = JSON.stringify({ features: Object.fromEntries(Object.keys(FEATURES).map(key => [key, true])) })
@@ -376,7 +375,7 @@ test('a shell group holding a failed call unfolds, others stay folded', async ($
 test('reads the JSONC config over the defaults, reporting bad keys and values', () => {
   const { config, errors } = readConfig(`{
     // whole-line comment
-    "features": { "tldr": true, "links": "no", "nope": true, "zen": true, "zenCommand": true }, // trailing comment; the two retired keys pass silently
+    "features": { "tldr": true, "links": "no", "nope": true, "zen": true, "zenCommand": true, "snapCommand": true }, // trailing comment; the retired keys pass silently
     "palette": { "mint": "#6EE7B7", "bad": "green" },
     "colors": { "shell": "#22C55E", "tldr": "mint", "pr": "url-not://a-color", "prod": "red" }, // prod: a retired link color, passes silently
   }`)
@@ -711,120 +710,9 @@ test('/exec output that is plain text, a bare JSON scalar, broken JSON or a fail
   }
 })
 
-test('reads /snap options, a value keeping its spaces up to the next option', () => {
-  expect(parseSnapArgs('https://x.fr --el nav > ul.menu --css --wait 800 --dark')).toEqual({ url: 'https://x.fr', flags: ['css', 'dark'], values: { el: 'nav > ul.menu', wait: '800' } })
-  expect(parseSnapArgs('https://x.fr --watch --perf')).toEqual({ url: 'https://x.fr', flags: ['perf'], values: { watch: '' } })
-  expect(parseSnapArgs('x.fr')).toContain('Usage')
-  expect(parseSnapArgs('https://x.fr --vs https://y.fr --devices')).toBe('One view at a time: --vs, --devices')
-  expect(parseSnapArgs('https://x.fr --css')).toBe('--css needs --el <css>')
-  expect(parseSnapArgs('https://x.fr --nope')).toContain('Unknown option: --nope')
-  const args = parseSnapArgs('https://x.fr --vs https://y.fr --noads --figma https://figma.com/f --watch src') as SnapArgs
-  expect(snapArgv(args)).toEqual(['--noads', '--vs', 'https://y.fr'])
-  expect(snapTitle(args)).toBe('vs https://y.fr · no ads · Figma · watch')
-})
-
-test('formats script reports as markdown', () => {
-  expect(snapReport('DIFF', { percent: 0.37, zones: 1, hosts: ['local.x', 'www.x'] })).toBe('**Visual diff**: 0.37% of pixels differ · 1 zone boxed in red · − `local.x` · + `www.x`')
-  expect(snapReport('CLS', { score: 0.3, shifts: [{ node: 'div.ad', value: 0.3, at: 1200 }] })).toBe('**CLS**: 0.3 (✘ poor), zones in red\n1. `div.ad` · 0.3 at 1.2 s')
-  expect(snapReport('CONSOLE', [{ level: 'error', text: 'boom', url: 'https://x/a.js?v=1', line: 3, count: 2 }])).toBe('**Console**: 1 entry\n- ✘ boom (×2) — `https://x/a.js:3`')
-  expect(snapReport('A11Y', [{ kind: 'contrast', node: 'time', text: '24 sept', ratio: 2.5 }])).toContain('1. `time` · contrast 2.5:1 "24 sept"')
-})
-
 test('sizes a picture in cells, keeping its aspect under the row cap', () => {
   expect(imageCells(1280, 800, 100)).toEqual({ columns: 100, rows: 31 })
   expect(imageCells(1280, 12673, 100)).toEqual({ columns: 40, rows: 200 })
-})
-
-test('/snap runs the script with its options and draws the picture', async ($, on) => {
-  mock.env(on, { HOME: '/home/me' })
-  mock.clock(on, { now: 7 })
-  let argv: readonly string[] = []
-  on('process.run', (_$, e) => {
-    argv = e.argv
-
-    return runOf('1280x12673\n')
-  })
-  const { text } = await $.command.run({ command: 'snap', args: 'https://www.example.com/ --full', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 100 } })
-  expect(argv[1]).toMatch(/\/hooks\/rich-replies\/snap\.mjs$/)
-  expect([argv[0], ...argv.slice(2)]).toEqual(['node', 'https://www.example.com/', '/tmp/rich-replies-snap-7.png', '--full'])
-  expect(text).toBe('Screenshot of https://www.example.com/ (full page)\n/tmp/rich-replies-snap-7.png 1280x12673')
-  const ui = await $.ui.mount({ plugin: 'rich-replies', surface: 'terminal', component: 'CommandOutput', props: { command: 'snap', args: '', text: text ?? '', isErrored: false }, requestId: 'msg3', ...view })
-  expect(await ui.find({ text: /◉ https:\/\/www\.example\.com\/ \(full page\)/ })).toBeDefined()
-  expect(await ui.find({ key: 'snap-open-msg3' })).toBeDefined()
-  await ui.unmount()
-})
-
-test('/snap --figma keeps the mockup: → Claude (Figma) asks for the comparison', async ($, on) => {
-  mock.clock(on, { now: 11 })
-  mock.env(on, { HOME: '/home/me' })
-  on('process.run', () => runOf('1280x800\n'))
-  const { text } = await $.command.run({ command: 'snap', args: 'https://x.fr --figma https://figma.com/f', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 100 } })
-  expect(text).toContain('**Figma**: https://figma.com/f')
-  const ui = await $.ui.mount({ plugin: 'rich-replies', surface: 'terminal', component: 'CommandOutput', props: { command: 'snap', args: '', text: text ?? '', isErrored: false }, requestId: 'msg5', ...view })
-  expect(await ui.find({ text: '→ Claude (Figma)' })).toBeDefined()
-  await ui.unmount()
-})
-
-test('/snap --css hands the element computed styles as one rule, drawn under the picture', async ($, on) => {
-  mock.clock(on, { now: 8 })
-  mock.env(on, { HOME: '/home/me' })
-  on('process.run', (_$, e) => {
-    expect(e.argv.slice(-3)).toEqual(['--css', '--el', 'h1'])
-
-    return runOf('216x52\nCSS {"display":"flex","font-size":"16px"}\n')
-  })
-  const run = (args: string) => $.command.run({ command: 'snap', args, origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 100 } })
-  expect((await run('https://x.fr --css')).text).toBe('--css needs --el <css>')
-  const { text } = await run('https://x.fr --el h1 --css')
-  expect(text).toBe('Screenshot of https://x.fr (element h1 · CSS)\n/tmp/rich-replies-snap-8.png 216x52\n\n```css\nh1 {\n  display: flex;\n  font-size: 16px;\n}\n```')
-  const ui = await $.ui.mount({ plugin: 'rich-replies', surface: 'terminal', component: 'CommandOutput', props: { command: 'snap', args: '', text: text ?? '', isErrored: false }, requestId: 'msg4', ...view })
-  expect(await ui.find({ key: 'snap-copy-msg4' })).toBeDefined()
-  await ui.unmount()
-})
-
-test('/snap --watch redraws the picture when the tree changes, /snap stop ends it', async ($, on) => {
-  const clock = mock.clock(on, { now: 9 })
-  mock.env(on, { HOME: '/home/me' })
-  let tree = 'a.css 1\n'
-  let shots = 0
-  on('process.run', (_$, e) => {
-    if (e.argv[0] === 'sh') return runOf(tree)
-    shots++
-
-    return runOf('1280x800\n')
-  })
-  const run = (args: string) => $.command.run({ command: 'snap', args, origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 100 } })
-  const { text } = await run('https://x.fr --watch src')
-  expect(text).toContain('**Watch**')
-  const settle = async () => {
-    for (let i = 0; i < 20; i++) await Promise.resolve()
-  }
-  const mount = () => $.ui.mount({ plugin: 'rich-replies', surface: 'terminal', component: 'CommandOutput', props: { command: 'snap', args: '', text: text ?? '', isErrored: false }, requestId: 'msg5', ...view })
-  await clock.advance(2000)
-  await settle()
-  expect(shots).toBe(1)
-  tree = 'a.css 2\n'
-  await clock.advance(2000)
-  await settle()
-  expect(shots).toBe(2)
-  const ui = await mount()
-  expect(await ui.find({ text: '◉ watch · 1' })).toBeDefined()
-  await ui.unmount()
-  await run('stop')
-  tree = 'a.css 3\n'
-  await clock.advance(2000)
-  await settle()
-  expect(shots).toBe(2)
-})
-
-test('a --vs report diffs both pages: lines in −/+, numbers in a table with Δ', () => {
-  expect(lineDiff(['a', 'b', 'c', 'd', 'e', 'f'], ['a', 'b', 'c', 'X', 'e', 'f'])).toEqual(['  …', '  c', '- d', '+ X', '  e', '  …'])
-  const hosts = ['local.x', 'www.x']
-  expect(snapReport('TEXT', { pair: [['Actus', 'Partager'], ['Actus 10', 'Partager']], hosts })).toBe('**Visible text** · − `local.x` · + `www.x`\n```diff\n- Actus\n+ Actus 10\n  Partager\n```')
-  expect(snapReport('TEXT', { pair: [['a'], ['a']], hosts })).toContain('✔ identical')
-  expect(snapReport('CSS', { pair: [{ color: 'red', gap: '8px' }, { color: 'blue', gap: '8px' }], hosts }, 'h1')).toContain('```diff\n- color: red;\n+ color: blue;\n```')
-  const perf = (ttfb: number) => ({ ttfb, fcp: 0, lcp: 0, load: 0, cls: 0, requests: 1, bytes: 1000, thirdBytes: 0 })
-  expect(snapReport('PERF', { pair: [perf(346), perf(131)], hosts })).toContain('| TTFB | 346 ms | 131 ms | −215 ms |')
 })
 
 test('a SQL block runs only one reading statement on the database its first line names', () => {

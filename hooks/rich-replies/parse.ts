@@ -383,7 +383,6 @@ export const FEATURES = {
   imagePreview: false,
   changesCommand: false,
   prCommand: false,
-  snapCommand: false,
   execCommand: false,
 }
 
@@ -434,7 +433,7 @@ const stripComments = (text: string) =>
 export const parseJsonc = (text: string): unknown => JSON.parse(stripComments(text).replace(/,(\s*[}\]])/g, '$1'))
 
 // Keys of removed features: an old file still holds them, and that is no mistake worth a toast.
-const RETIRED = ['zen', 'zenCommand']
+const RETIRED = ['zen', 'zenCommand', 'snapCommand']
 // Link colors by environment, gone with the environments: an old config keeps them without a toast.
 const RETIRED_COLORS = ['local', 'staging', 'prod', 'storybook', 'external']
 
@@ -618,190 +617,6 @@ export function prChecks(rollup: unknown): Check[] {
   })
 }
 
-const SNAP_FLAGS = ['full', 'css', 'dark', 'consent', 'noads', 'devices', 'filmstrip', 'og', 'cls', 'perf', 'console', 'a11y', 'tokens'] as const
-const SNAP_VALUES = ['el', 'wait', 'vs', 'hover', 'click', 'figma', 'watch'] as const
-const SNAP_LAYOUTS = ['vs', 'devices', 'filmstrip', 'og']
-export const SNAP_USAGE = [
-  'Usage: /snap <url> [options]',
-  'Frame: --full · --el <css> [--css] · --wait <ms> · --dark · --hover <css> · --click <css> · --consent (keep the cookie wall) · --noads',
-  'View (one only): --vs <url> · --devices · --filmstrip · --og',
-  'Checks: --cls · --perf · --console · --a11y · --tokens',
-  'Follow-up: --figma <url> (→ Claude compares) · --watch [folder] (retakes the shot on every change) · /snap stop',
-].join('\n')
-
-export type SnapArgs = { url: string; flags: string[]; values: Record<string, string> }
-
-// `/snap <url> [--flag] [--name <value, spaces allowed up to the next --flag>]`; a string says what is wrong.
-export function parseSnapArgs(args: string): SnapArgs | string {
-  const url = args.trim().split(/\s+/)[0] ?? ''
-  if (!/^https?:\/\/\S+$/.test(url)) return SNAP_USAGE
-  const flags = SNAP_FLAGS.filter(name => new RegExp(`(^|\\s)--${name}(?=\\s|$)`).test(args))
-  const values: Record<string, string> = {}
-  for (const name of SNAP_VALUES) {
-    const found = args.match(new RegExp(`(?:^|\\s)--${name}(?:\\s+(?!--)(.+?))?(?=\\s+--|$)`))
-    if (found) values[name] = found[1]?.trim() ?? ''
-  }
-  const unknown = [...args.matchAll(/(?:^|\s)--([\w-]+)/g)].map(m => m[1] ?? '').filter(name => !(SNAP_FLAGS as readonly string[]).includes(name) && !(SNAP_VALUES as readonly string[]).includes(name))
-  if (unknown.length > 0) return `Unknown option: --${unknown.join(', --')}\n${SNAP_USAGE}`
-  const layouts = SNAP_LAYOUTS.filter(name => flags.includes(name as never) || name in values)
-  if (layouts.length > 1) return `One view at a time: --${layouts.join(', --')}`
-  if (flags.includes('css') && !values.el) return '--css needs --el <css>'
-  for (const name of ['el', 'vs', 'hover', 'click', 'figma'] as const) if (values[name] === '') return `--${name} needs a value`
-  if (values.vs !== undefined && !/^https?:\/\/\S+$/.test(values.vs)) return '--vs needs an http(s) url'
-
-  return { url, flags, values }
-}
-
-// The script's argv: every option but the two the mod handles itself (--figma, --watch).
-export function snapArgv(args: SnapArgs): string[] {
-  const values = Object.entries(args.values).filter(([name]) => name !== 'figma' && name !== 'watch')
-
-  return [...args.flags.map(name => `--${name}`), ...values.flatMap(([name, value]) => [`--${name}`, value])]
-}
-
-const kb = (bytes: number) => (bytes > 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : `${Math.round(bytes / 1e3)} kB`)
-const ms = (value: number) => (value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${value} ms`)
-
-// Line diff by longest common subsequence: changed lines with one line of context, "…" over the rest.
-export function lineDiff(a: string[], b: string[], max = 40): string[] {
-  const table = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0))
-  for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) table[i]![j] = a[i] === b[j] ? table[i + 1]![j + 1]! + 1 : Math.max(table[i + 1]![j]!, table[i]![j + 1]!)
-  const ops: string[] = []
-  let i = 0
-  let j = 0
-  while (i < a.length || j < b.length) {
-    if (i < a.length && j < b.length && a[i] === b[j]) {
-      ops.push(`  ${a[i]}`)
-      i++
-      j++
-    } else if (j < b.length && (i === a.length || table[i]![j + 1]! > table[i + 1]![j]!)) ops.push(`+ ${b[j++]}`)
-    else ops.push(`- ${a[i++]}`)
-  }
-  const isChange = (n: number) => ops[n] !== undefined && !ops[n]!.startsWith('  ')
-  const shown: string[] = []
-  ops.forEach((op, n) => {
-    if (isChange(n) || isChange(n - 1) || isChange(n + 1)) shown.push(op)
-    else if (shown.at(-1) !== '  …') shown.push('  …')
-  })
-
-  return shown.length > max ? [...shown.slice(0, max), `  … +${shown.length - max} lines`] : shown
-}
-
-const diffBlock = (lines: string[]) => (lines.some(line => line.startsWith('+') || line.startsWith('-')) ? `\`\`\`diff\n${lines.join('\n')}\n\`\`\`` : '✔ identical')
-
-const signed = (delta: number, format: (n: number) => string) => (delta === 0 ? '=' : `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`)
-
-// A --vs report: the same check on both pages, as a table (numbers) or a diff (lists), − first page, + second.
-function pairReport(key: string, [a, b]: [any, any], [hostA, hostB]: [string, string], selector: string): string {
-  const head = `− \`${hostA}\` · + \`${hostB}\``
-  switch (key) {
-    case 'TEXT':
-      return `**Visible text** · ${head}\n${diffBlock(lineDiff(a, b))}`
-    case 'CSS': {
-      const props = [...new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})])]
-      const lines = props.flatMap(prop =>
-        a?.[prop] === b?.[prop] ? [] : [...(a?.[prop] !== undefined ? [`- ${prop}: ${a[prop]};`] : []), ...(b?.[prop] !== undefined ? [`+ ${prop}: ${b[prop]};`] : [])],
-      )
-      return `**CSS of \`${selector}\`** · ${head}\n${diffBlock(lines)}`
-    }
-    case 'PERF': {
-      const rows: [string, number, number, (n: number) => string][] = [
-        ['TTFB', a.ttfb, b.ttfb, ms], ['FCP', a.fcp, b.fcp, ms], ['LCP', a.lcp, b.lcp, ms], ['load', a.load, b.load, ms],
-        ['CLS', a.cls, b.cls, n => String(Number(n.toFixed(3)))], ['requests', a.requests, b.requests, String],
-        ['weight', a.bytes, b.bytes, kb], ['third-party weight', a.thirdBytes, b.thirdBytes, kb],
-      ]
-      const table = rows.map(([name, va, vb, format]) => `| ${name} | ${format(va)} | ${format(vb)} | ${signed(vb - va, format)} |`)
-      return [`**Perf** (empty cache) · ${head}`, `| | − ${hostA} | + ${hostB} | Δ |`, '|---|---:|---:|---:|', ...table].join('\n')
-    }
-    case 'CLS':
-      return `**CLS**: − ${a.score} · + ${b.score} (Δ ${signed(Number((b.score - a.score).toFixed(3)), String)})\n${diffBlock(lineDiff(a.shifts.map((x: any) => x.node), b.shifts.map((x: any) => x.node)))}`
-    case 'CONSOLE': {
-      const line = (entry: any) => `${entry.level} ${entry.text.replace(/https?:\/\/[^/\s]+/g, '').replace(/\?[^\s']*/g, '?…').slice(0, 160)}`
-      return `**Console** · ${head} (hosts and query strings removed to compare)\n${diffBlock(lineDiff(a.map(line), b.map(line)))}`
-    }
-    case 'A11Y': {
-      const line = (issue: any) => `${issue.node} · ${issue.kind}${issue.ratio ? ` ${issue.ratio}:1` : ''} ${issue.text.replace(/https?:\/\/[^/\s]+/g, '')}`
-      return `**A11y** · ${head}\n${diffBlock(lineDiff(a.map(line), b.map(line)))}`
-    }
-    case 'TOKENS': {
-      const keys = (value: any) => (value?.hardcoded ?? []).map((item: any) => item.key)
-      return `**Hard-coded values** · ${head}\n${diffBlock(lineDiff(keys(a), keys(b)))}`
-    }
-    default:
-      return ''
-  }
-}
-
-// One script report ("KEY <json>") as markdown: what the row shows under the picture and what → Claude sends.
-export function snapReport(key: string, value: any, selector = 'element'): string {
-  if (value?.pair) return pairReport(key, value.pair, value.hosts, selector)
-  switch (key) {
-    case 'CSS':
-      return value ? fencedCss(cssRule(selector, value)) : ''
-    case 'DIFF':
-      return `**Visual diff**: ${value.percent}% of pixels differ · ${value.zones} zone${value.zones > 1 ? 's' : ''} boxed in red · − \`${value.hosts[0]}\` · + \`${value.hosts[1]}\``
-    case 'CLS': {
-      const verdict = value.score <= 0.1 ? '✔ good' : value.score <= 0.25 ? '⚠ needs improvement' : '✘ poor'
-      const lines = value.shifts.map((shift: any, n: number) => `${n + 1}. \`${shift.node}\` · ${shift.value} at ${ms(shift.at)}`)
-      return [`**CLS**: ${value.score} (${verdict}), zones in red`, ...lines].join('\n')
-    }
-    case 'PERF': {
-      const domains = value.domains.map((d: any) => `\`${d.name}\` ${kb(d.bytes)}`).join(', ')
-      return [
-        '**Perf** (first load, empty cache)',
-        `- TTFB ${ms(value.ttfb)} · FCP ${ms(value.fcp)} · LCP ${ms(value.lcp)} (\`${value.lcpNode}\`, in green) · load ${ms(value.load)} · CLS ${value.cls}`,
-        `- ${value.requests} requests, ${kb(value.bytes)} · third parties: ${value.thirdRequests} requests, ${kb(value.thirdBytes)}`,
-        ...(domains ? [`- Biggest third parties: ${domains}`] : []),
-      ].join('\n')
-    }
-    case 'CONSOLE': {
-      if (value.length === 0) return '**Console**: ✔ nothing'
-      const icon: Record<string, string> = { error: '✘', warning: '⚠', network: '⇣' }
-      return [`**Console**: ${value.length} entr${value.length > 1 ? 'ies' : 'y'}`, ...value.map((entry: any) => `- ${icon[entry.level] ?? '·'} ${entry.text.slice(0, 200)}${entry.count > 1 ? ` (×${entry.count})` : ''}${entry.url && entry.level !== 'network' ? ` — \`${entry.url.split('?')[0]}:${entry.line}\`` : ''}`)].join('\n')
-    }
-    case 'A11Y': {
-      if (value.length === 0) return '**A11y**: ✔ nothing found'
-      const what = (issue: any) => (issue.kind === 'alt' ? `image without alt (${issue.text})` : issue.kind === 'name' ? `link/button without a name ${issue.text ? `(${issue.text})` : ''}` : `contrast ${issue.ratio}:1 "${issue.text}"`)
-      return ['**A11y**: numbered in orange on the shot', ...value.map((issue: any, n: number) => `${n + 1}. \`${issue.node}\` · ${what(issue)}`)].join('\n')
-    }
-    case 'TOKENS': {
-      if (!value) return '**Tokens**: element not found'
-      const list = (items: any[]) => items.map(item => `- ${item.key} (×${item.count})`)
-      return [`**Tokens**: ${value.tokens} CSS variables on the page`, '*Values that are tokens:*', ...list(value.matched), '*Hard-coded values:*', ...list(value.hardcoded)].join('\n')
-    }
-    case 'OG': {
-      const missing = value.missing.length > 0 ? `⚠ missing: ${value.missing.join(', ')}` : '✔ all key tags'
-      return [`**Share card** · ${missing}`, `- title: ${value.title}`, `- description: ${value.description.slice(0, 200)}`, `- image: ${value.image || '—'}`, `- canonical: ${value.canonical || '—'}`].join('\n')
-    }
-    default:
-      return ''
-  }
-}
-
-const SNAP_LABELS: Record<string, string> = {
-  full: 'full page', css: 'CSS', dark: 'dark', consent: 'cookie wall', noads: 'no ads', devices: 'devices',
-  filmstrip: 'filmstrip', og: 'share card', cls: 'CLS', perf: 'perf', console: 'console', a11y: 'a11y', tokens: 'tokens',
-}
-
-// What a /snap row is, in a few words: "element nav · CSS · dark".
-export function snapTitle(args: SnapArgs): string {
-  const { el, vs, hover, click, wait, figma, watch } = args.values
-  const parts = [
-    el && `element ${el}`,
-    vs && `vs ${vs}`,
-    hover && `hover ${hover}`,
-    click && `click ${click}`,
-    wait && `+${wait} ms`,
-    ...args.flags.map(name => SNAP_LABELS[name]),
-    figma !== undefined && 'Figma',
-    watch !== undefined && 'watch',
-  ]
-
-  return parts.filter(Boolean).join(' · ') || 'screen'
-}
-
-const fencedCss = (rule: string) => `\`\`\`css\n${rule}\n\`\`\``
-
 // Cells for a picture of width x height px: two px rows per cell row, aspect kept under the row cap.
 export function imageCells(width: number, height: number, maxColumns: number, maxRows = 200) {
   const columns = Math.max(10, Math.min(maxColumns, 255))
@@ -809,11 +624,6 @@ export function imageCells(width: number, height: number, maxColumns: number, ma
   if (rows <= maxRows) return { columns, rows }
 
   return { columns: Math.max(4, Math.round((maxRows * 2 * width) / height)), rows: maxRows }
-}
-
-// Computed styles as one CSS rule, the way devtools would print them.
-export function cssRule(selector: string, styles: Record<string, string>): string {
-  return `${selector} {\n${Object.entries(styles).map(([prop, value]) => `  ${prop}: ${value};`).join('\n')}\n}`
 }
 
 // --- Problems: a linter's lines after an edit ---

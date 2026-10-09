@@ -14,7 +14,7 @@
     {
       "id": 3,
       "prompt": "show me the rich replies SQL console",
-      "expected_output": "Plays step 9: first shows the CREATE DATABASE IF NOT EXISTS rr_tour / INSERT IGNORE statements of tour.sh db (scratch database only) and asks the user to run it; offers a SELECT then a DELETE FROM items WHERE qty = 0 in ```sql fences with '-- db: rr_tour', explains that the DELETE is simulated (rows it would touch, nothing written) and has the user check with SELECT COUNT(*) AS total FROM items that the table still holds 4 rows. Never runs a DROP."
+      "expected_output": "Plays step 8: first shows the CREATE DATABASE IF NOT EXISTS rr_tour / INSERT IGNORE statements of tour.sh db (scratch database only) and asks the user to run it; offers a SELECT then a DELETE FROM items WHERE qty = 0 in ```sql fences with '-- db: rr_tour', explains that the DELETE is simulated (rows it would touch, nothing written) and has the user check with SELECT COUNT(*) AS total FROM items that the table still holds 4 rows. Never runs a DROP."
     },
     {
       "id": 4,
