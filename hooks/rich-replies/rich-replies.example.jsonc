@@ -26,7 +26,6 @@
     // Slash commands, registered at session start.
     "changesCommand": false,   // /changes: unstaged diff hunk by hunk, stage / unstage, revert / restore, → Claude
     "prCommand": false,        // /pr: live card of the branch's PR, checks, failing log → Claude
-    "snapCommand": false,      // /snap <url>: page screenshot in the transcript (needs Chrome, Node 22+)
     "execCommand": false       // /exec <command>: runs it in the transcript, the model sees its output only on → Claude
   },
 
@@ -56,6 +55,6 @@
     "shell":    "emerald",
     "progress": "teal",       // progress bars (/pr checks)
     "pr":       "fuchsia",    // a merged PR on the /pr card
-    "path":     "teal"        // file paths: stack links, /changes, /snap
+    "path":     "teal"        // file paths: stack links, /changes
   }
 }

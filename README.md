@@ -49,10 +49,9 @@ Buttons (⧉, ▶, → Claude) answer clicks on desktop, and in the terminal in 
 | `jsonViewer` | A foldable 🌳 tree for JSON blocks, REST bodies and `/exec` output | `codeBlocks` (blocks), `restClient` (bodies) |
 | `changesCommand` | `/changes`: the unstaged diff hunk by hunk: stage, unstage, revert, restore, → Claude | `git` |
 | `prCommand` | `/pr`: a live card for the branch's PR, CI checks, a failing log → Claude | `gh` |
-| `snapCommand` | `/snap <url>`: page screenshots, responsive, perf, a11y, visual diff, `--watch` | Chrome, Node 22+, image-capable terminal |
 | `execCommand` | `/exec <command>`: runs it in the transcript; Claude sees the output only when you click → Claude | |
 
-Commands (`/changes`, `/pr`, `/snap`, `/exec`) register when the plugin loads: after turning one on, run `/reload-plugins`.
+Commands (`/changes`, `/pr`, `/exec`) register when the plugin loads: after turning one on, run `/reload-plugins`.
 
 A visual cheat sheet of every feature lives in [`docs/rich-replies/index.html`](docs/rich-replies/index.html) (open it locally).
 

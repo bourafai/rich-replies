@@ -29,7 +29,7 @@ Script: `"$CLAUDE_PLUGIN_ROOT/skills/rich-replies-tour/scripts/tour.sh"` (`setup
 1. `tour.sh status` — feature states (the file is created from the example if missing).
 2. `tour.sh setup` — builds the `/tmp/rr-tour` sandbox (crashing app, PHP file, JSON, git repo with 2 unstaged hunks).
 3. `tour.sh enable all` — turns everything on; a `.tour-backup` is saved on the first run.
-4. Restart Claude **from the sandbox**: `/exit` then `cd /tmp/rr-tour && claude -c`. Required: commands (`/changes`, `/exec`, `/snap`…) load only at session start and read the current directory. Give this command in an inert ```text fence, never ```bash: ▶ would run it without a TTY and `claude` would answer `Input must be provided either through stdin or as a prompt argument when using --print`. Tell the user to type it in a real terminal (separate tab or window, or after `/exit`).
+4. Restart Claude **from the sandbox**: `/exit` then `cd /tmp/rr-tour && claude -c`. Required: commands (`/changes`, `/exec`…) load only at session start and read the current directory. Give this command in an inert ```text fence, never ```bash: ▶ would run it without a TTY and `claude` would answer `Input must be provided either through stdin or as a prompt argument when using --print`. Tell the user to type it in a real terminal (separate tab or window, or after `/exit`).
 
 Don't start step 1 until the user confirms they are in `/tmp/rr-tour`.
 
@@ -46,19 +46,18 @@ Full detail (demo, expected result, pitfall): `references/steps.md`. Read the st
 | 5 | Lint after edit | problems |
 | 6 | Sort your changes | changesCommand |
 | 7 | Run a command in the transcript | execCommand, jsonViewer |
-| 8 | See a web page | snapCommand |
-| 9 | Query the local database | sqlConsole |
-| 10 | Test an endpoint, read JSON | restClient, jsonViewer |
-| 11 | Settings: colors, palette, editor | colors, palette, editor |
+| 8 | Query the local database | sqlConsole |
+| 9 | Test an endpoint, read JSON | restClient, jsonViewer |
+| 10 | Settings: colors, palette, editor | colors, palette, editor |
 
 Off the tour, mention in one line: `/pr` (live PR card, needs `gh` and a branch with a PR: try it in a real repo).
 
 ## End of tour
 
-Offer, without running them: `tour.sh disable <unneeded features>` (or `cp ~/.claude/rich-replies.jsonc.tour-backup ~/.claude/rich-replies.jsonc` to restore everything), then `tour.sh teardown`. The `rr_tour` scratch database (step 9) is never dropped by the script: give the drop query to the user, who runs it if they want (data-safety).
+Offer, without running them: `tour.sh disable <unneeded features>` (or `cp ~/.claude/rich-replies.jsonc.tour-backup ~/.claude/rich-replies.jsonc` to restore everything), then `tour.sh teardown`. The `rr_tour` scratch database (step 8) is never dropped by the script: give the drop query to the user, who runs it if they want (data-safety).
 
 ## Safety
 
 - `run`, `restClient`, `sqlConsole` act only on click; a risky command needs a second click (`▶⚠`). The demo uses this on purpose (step 2) on a target that doesn't exist.
 - `problems` runs the current repo's linters: fine in the sandbox, remind the user before enabling it elsewhere.
-- Step 9: show the `CREATE` / `INSERT IGNORE` statements of `tour.sh db` (`rr_tour` database only) before asking the user to run it.
+- Step 8: show the `CREATE` / `INSERT IGNORE` statements of `tour.sh db` (`rr_tour` database only) before asking the user to run it.

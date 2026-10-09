@@ -58,10 +58,6 @@ declare module 'claude-code' {
       failure: StateFamily<string | null>
       hunk: StateFamily<HunkState | null>
       pr: PrCard | null
-      // A watched /snap picture's redraw count, by its path: the Image reads it as its generation.
-      snapGeneration: StateFamily<number | null>
-      // The path of the /snap picture being watched, if any.
-      snapWatched: string | null
       problems: StateFamily<Problems | null>
       sql: SqlRun | null
       // A JSON viewer node's fold, by its path; null follows the default (first two levels open).
