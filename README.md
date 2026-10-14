@@ -4,6 +4,8 @@
 
 A Claude Code mod that adds structure to the transcript: a TL;DR box on long replies, ▶ to run a suggested command, the error that matters under a failed tool call, a read-only SQL console, and `/changes` to stage a diff hunk by hunk. Every feature is **off** until you turn it on.
 
+![The same reply, before and after](docs/rich-replies/img/00-before-after.png)
+
 ![rich-replies cheat sheet](docs/rich-replies/img/dark.png)
 
 ## Quick start
@@ -53,6 +55,67 @@ Buttons (⧉, ▶, → Claude) answer clicks on desktop, and in the terminal in 
 | `execCommand` | `/exec <command>`: runs it in the transcript; Claude sees the output only when you click → Claude | |
 
 Commands (`/changes`, `/pr`, `/exec`) register when the plugin loads: after turning one on, run `/reload-plugins`.
+
+## Screenshots
+
+Rendered from the [demo page](docs/rich-replies/index.html); the code, tool-row and `/exec` images are mockups in the same style, with the labels and colors the mod uses.
+
+<details>
+<summary>All features</summary>
+
+**TL;DR box, folded sections, flagged question**
+
+![TL;DR box, folded sections, flagged question](docs/rich-replies/img/01-tldr.png)
+
+**▶ run a suggested command**
+
+![▶ run a suggested command](docs/rich-replies/img/02-run.png)
+
+**The error line that matters, with file:line links**
+
+![The error line that matters, with file:line links](docs/rich-replies/img/03-error.png)
+
+**Code with a language badge**
+
+![Code with a language badge](docs/rich-replies/img/12-code-blocks.png)
+
+**Badges and durations on tool rows**
+
+![Badges and durations on tool rows](docs/rich-replies/img/13-tool-rows.png)
+
+**Copy a box in one click**
+
+![Copy a box in one click](docs/rich-replies/img/08-copy.png)
+
+**Short links and color swatches**
+
+![Short links and color swatches](docs/rich-replies/img/09-links-colors.png)
+
+**Lint after an Edit**
+
+![Lint after an Edit](docs/rich-replies/img/10-lint.png)
+
+**/changes: stage a hunk**
+
+![/changes: stage a hunk](docs/rich-replies/img/04-changes.png)
+
+**/pr: live card with CI checks**
+
+![/pr: live card with CI checks](docs/rich-replies/img/05-pr.png)
+
+**SQL console, read-only**
+
+![SQL console, read-only](docs/rich-replies/img/06-sql.png)
+
+**REST client and foldable JSON tree**
+
+![REST client and foldable JSON tree](docs/rich-replies/img/07-json-tree.png)
+
+**/exec: run in the transcript**
+
+![/exec: run in the transcript](docs/rich-replies/img/14-exec.png)
+
+</details>
 
 A visual cheat sheet of every feature lives in [`docs/rich-replies/index.html`](docs/rich-replies/index.html) (open it locally).
 
